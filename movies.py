@@ -284,6 +284,8 @@ def execute_query(g, query):
     return results
 
 
+
+
 def transfer_results_to_front_end(results, result_types):
     # transfer the results to a list that can be sent to the front end
     print("transfer results to front end ------")
@@ -309,17 +311,18 @@ def activate_initial():
     return g
 
 
-def activate_filter(front_end_filter_list):
+def activate_filter(front_end_filter_list, g):
     filter_dict = create_filter_dict(front_end_filter_list)
     filter = MovieFilter(filter_dict)
     filter.display_filter()
     filter_query = filter.generate_query()
+    print(len(g))
     results = execute_query(g, filter_query)
     filter_results = transfer_results_to_front_end(results, result_types=["movie_name"])
     print(filter_results)
     return filter_results
 
-def activate_info(front_end_movie_name):
+def activate_info(front_end_movie_name, g):
     info_query = generate_query_movie_info(front_end_movie_name)
     result_types=["actor_name", "genre_name", "runtime", "initial_release_date", 
                   "director_name", "producer_name", "languageCode", "writer_name", "editor_name", 
