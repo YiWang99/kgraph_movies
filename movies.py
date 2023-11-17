@@ -63,15 +63,19 @@ def generate_query_in_filter(filter_dict):
             for index, value in enumerate(values):
                 # q += f"FILTER (?{key}_name{index} = \"{value}\") ."
                 q += f"FILTER (STRSTARTS(?{key}_name{index}, \"{value}\")) ."
+        elif key == "runtime":
+            # maybe multiple values of runtime
+            for value in values:
+                q += f"FILTER (?{key}_int {value}) ."
+        elif key == "initial_release_date":
+            q += f"FILTER (?{key}_int {values[0]}) ."
+        elif key == "language":
+            q += f"""
+                    BIND(STRAFTER(str(?language), "http://www.lingvoj.org/lingvo/") AS ?languageCode)
+                    FILTER(?languageCode = "{values[0]}")"""
         else:
-            if key == "runtime":
-                # maybe multiple values of runtime
-                for value in values:
-                    q += f"FILTER (?{key}_int {value}) ."
-            elif key == "initial_release_date":
-                q += f"FILTER (?{key}_int {values[0]}) ."
-            else:
-                q += f"FILTER (?{key} = \"{values[0]}\") ."
+            q += f"FILTER (?{key} = \"{values[0]}\") ."
+
     return q
 
 def generate_query_in_where(filter_dict):
@@ -349,7 +353,7 @@ if __name__ == "__main__":
     initial_release_date = np.array(["initial_release_date", ""])
     director = np.array(["director", ""])
     producer = np.array(["producer", ""])
-    language = np.array(["language", ""])
+    language = np.array(["language", "en"])
     writer = np.array(["writer", ""])
     editor = np.array(["editor", ""])
     music_contributor = np.array(["music_contributor", ""])
