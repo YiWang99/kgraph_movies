@@ -53,6 +53,21 @@ def generate_query_in_brackets(filter_dict):
     q += "] ."
     return q
 
+def generate_query_in_brackets_full_name(filter_dict):
+    q = """
+        ?film a lmdb:film ;
+            dc:title ?movie_name ;
+    """
+    for key, values in filter_dict.items():
+        if values[0] == "":
+            continue
+        if key in ["actor", "genre", "director", "producer", "writer", "editor", "music_contributor"]:
+            for _, value in enumerate(values):
+                q += f"lmdb:{key} [lmdb:{key}_name \"{value}\"] ;"
+        else:
+            q += f" lmdb:{key} ?{key} ;"
+    return q
+
 def generate_query_in_filter(filter_dict):
     q = ""
     for key, values in filter_dict.items():
@@ -78,6 +93,32 @@ def generate_query_in_filter(filter_dict):
 
     return q
 
+
+def generate_query_in_filter_full_name(filter_dict):
+    q = ""
+    for key, values in filter_dict.items():
+        if values[0] == "":
+            print("No value for key:", key)
+            continue
+        if key in ["actor", "genre", "director", "producer", "writer", "editor", "music_contributor"]:
+            continue
+        if key == "runtime" or key == "initial_release_date":
+            if key == "runtime":
+                q += f"BIND(xsd:integer(?{key}) AS ?{key}_int) ."
+            if key == "initial_release_date":
+                q += f"BIND(STRDT(SUBSTR(?{key}, 1, 4), xsd:integer) AS ?{key}_int) ."
+            # maybe multiple values of runtime
+            q += f"FILTER ("
+            for value in values:
+                q += f"?{key}_int {value} && "
+            q = q[:-3] + ") ."
+        elif key == "language":
+            q += f"FILTER(STRAFTER(str(?language), \"http://www.lingvoj.org/lingvo/\") = \"{values[0]}\")"
+        else:
+            q += f"FILTER (?{key} = \"{values[0]}\") ."
+    return q
+
+
 def generate_query_in_where(filter_dict):
     query_in_brackets = generate_query_in_brackets(filter_dict)
     query_in_filter = generate_query_in_filter(filter_dict)
@@ -98,6 +139,10 @@ def generate_query_in_where(filter_dict):
     q += query_in_filter 
     return q
 
+def generate_query_in_where_full_name(filter_dict):
+    q = generate_query_in_brackets_full_name(filter_dict)      
+    q += generate_query_in_filter_full_name(filter_dict)
+    return q
 
 class MovieFilter:
     """
@@ -132,11 +177,15 @@ class MovieFilter:
         print("country:", self.country)
 
 
-    def generate_query(self):
+    def generate_query(self, limit=100, full_name_only=True):
+        if full_name_only:
+            generate_query_in_where_clause = generate_query_in_where_full_name(self.__dict__)
+        else:
+            generate_query_in_where_clause = generate_query_in_where(self.__dict__)
         query = """
         SELECT DISTINCT ?movie_name
-            WHERE {{{}}}LIMIT 100
-        """.format(generate_query_in_where(self.__dict__))
+            WHERE {{{}}}LIMIT {}
+        """.format(generate_query_in_where_clause, limit)
         print(query)
         return query
         
@@ -285,6 +334,7 @@ def execute_query(g, query):
     end_time = time.time()
     execution_time = end_time - start_time
     print(f"query execution time: {execution_time}s")
+    print(f"query results: {results}")
     return results
 
 
@@ -315,11 +365,11 @@ def activate_initial():
     return g
 
 
-def activate_filter(front_end_filter_list, g):
+def activate_filter(front_end_filter_list, g, limit, full_name_only):
     filter_dict = create_filter_dict(front_end_filter_list)
     filter = MovieFilter(filter_dict)
     filter.display_filter()
-    filter_query = filter.generate_query()
+    filter_query = filter.generate_query(limit=limit, full_name_only=full_name_only)
     print(len(g))
     results = execute_query(g, filter_query)
     filter_results = transfer_results_to_front_end(results, result_types=["movie_name"])
@@ -328,6 +378,7 @@ def activate_filter(front_end_filter_list, g):
 
 def activate_info(front_end_movie_name, g):
     info_query = generate_query_movie_info(front_end_movie_name)
+    print(info_query)
     result_types=["actor_name", "genre_name", "runtime", "initial_release_date", 
                   "director_name", "producer_name", "languageCode", "writer_name", "editor_name", 
                   "music_contributor_name", "country_name"]
@@ -347,10 +398,10 @@ def activate_info(front_end_movie_name, g):
 if __name__ == "__main__":
     g = activate_initial()
     # create actors, genres, runtime, initial_release_date, directors, producers, language, writers, editors, music_contributors, countries numpy arrays
-    actor = np.array(["actor", "Dustin Ho"])
-    genre = np.array(["genre", "Thriller"])
-    runtime = np.array(["runtime", "< 300", "> 100"])
-    initial_release_date = np.array(["initial_release_date", ""])
+    actor = np.array(["actor", "Daniel Radcliffe", "Emma Watson"])
+    genre = np.array(["genre", ""])
+    runtime = np.array(["runtime", "<= 150"])
+    initial_release_date = np.array(["initial_release_date", "< 2015"])
     director = np.array(["director", ""])
     producer = np.array(["producer", ""])
     language = np.array(["language", "en"])
@@ -360,7 +411,7 @@ if __name__ == "__main__":
     country = np.array(["country", ""])
     front_end_list =[actor, genre, runtime, initial_release_date, director, producer, language, writer, editor, music_contributor, country]
     
-    activate_filter(front_end_list)
+    activate_filter(front_end_list, g, 100, True)
 
-    # activate_info("Buffy the Vampire Slayer")
+    # activate_info("Harry Potter and the Prisoner of Azkaban", g)
 
