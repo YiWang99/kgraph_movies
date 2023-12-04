@@ -40,7 +40,7 @@ def create_filter_dict(front_end_list:list):
         filter_dict.update({row[0]:row[1:]}) 
     return filter_dict
 
-def generate_query_in_brackets(filter_dict):
+def generate_query_in_brackets_fuzzy(filter_dict):
     q = "[a lmdb:film; dc:title ?movie_name;"
     for key, values in filter_dict.items():
         if values[0] == "":
@@ -53,7 +53,7 @@ def generate_query_in_brackets(filter_dict):
     q += "] ."
     return q
 
-def generate_query_in_brackets_full_name(filter_dict):
+def generate_query_in_brackets_exact(filter_dict):
     q = """
         ?film a lmdb:film ;
             dc:title ?movie_name ;
@@ -68,7 +68,7 @@ def generate_query_in_brackets_full_name(filter_dict):
             q += f" lmdb:{key} ?{key} ;"
     return q
 
-def generate_query_in_filter(filter_dict):
+def generate_query_in_filter_fuzzy(filter_dict):
     q = ""
     for key, values in filter_dict.items():
         if values[0] == "":
@@ -93,8 +93,7 @@ def generate_query_in_filter(filter_dict):
 
     return q
 
-
-def generate_query_in_filter_full_name(filter_dict):
+def generate_query_in_filter_exact(filter_dict):
     q = ""
     for key, values in filter_dict.items():
         if values[0] == "":
@@ -118,10 +117,9 @@ def generate_query_in_filter_full_name(filter_dict):
             q += f"FILTER (?{key} = \"{values[0]}\") ."
     return q
 
-
-def generate_query_in_where(filter_dict):
-    query_in_brackets = generate_query_in_brackets(filter_dict)
-    query_in_filter = generate_query_in_filter(filter_dict)
+def generate_query_in_where_fuzzy(filter_dict):
+    query_in_brackets = generate_query_in_brackets_fuzzy(filter_dict)
+    query_in_filter = generate_query_in_filter_fuzzy(filter_dict)
     q = query_in_brackets
     for key, values in filter_dict.items():
         if values[0] == "":
@@ -139,9 +137,9 @@ def generate_query_in_where(filter_dict):
     q += query_in_filter 
     return q
 
-def generate_query_in_where_full_name(filter_dict):
-    q = generate_query_in_brackets_full_name(filter_dict)      
-    q += generate_query_in_filter_full_name(filter_dict)
+def generate_query_in_where_exact(filter_dict):
+    q = generate_query_in_brackets_exact(filter_dict)      
+    q += generate_query_in_filter_exact(filter_dict)
     return q
 
 class MovieFilter:
@@ -179,9 +177,9 @@ class MovieFilter:
 
     def generate_query(self, limit=100, full_name_only=True):
         if full_name_only:
-            generate_query_in_where_clause = generate_query_in_where_full_name(self.__dict__)
+            generate_query_in_where_clause = generate_query_in_where_exact(self.__dict__)
         else:
-            generate_query_in_where_clause = generate_query_in_where(self.__dict__)
+            generate_query_in_where_clause = generate_query_in_where_fuzzy(self.__dict__)
         query = """
         SELECT DISTINCT ?movie_name
             WHERE {{{}}}LIMIT {}
