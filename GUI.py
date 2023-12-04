@@ -11,6 +11,7 @@ queryResults = {}
 
 
 
+
 def filterSelection(e):
     selectedFilter = filterMenu.get()
     if selectedFilter == "Duration" or selectedFilter == "Release":
@@ -122,7 +123,7 @@ def searchMovies():
         print(row)
     dummy = np.array(["country", ""])
     filterArray.append(dummy)
-    queryResults = backend.activate_filter(filterArray, graph)
+    queryResults = backend.activate_filter(filterArray, graph, 200, exactSearch.get())
     movieNames = queryResults["movie_name"]
     print(movieNames)
     movieMenu['values'] = movieNames
@@ -210,6 +211,18 @@ def clearMusicContributorsFilter():
     musicContributorsFilters.delete(1.0,tk.END)
     musicContributorsFilters.configure(state="disabled")
 
+def selectExactSearch():
+    fuzzySearchSelector.deselect()
+    exactSearchSelector.configure(state="disabled")
+    fuzzySearchSelector.configure(state="normal")
+
+
+def selectFuzzySearch():
+    exactSearchSelector.deselect()
+    fuzzySearchSelector.configure(state="disabled")
+    exactSearchSelector.configure(state="normal")
+
+
 
 
 #Load Backend
@@ -220,7 +233,7 @@ graph = movies.load_kg("linkedmdb.nt")
 rootWindow = tk.Tk()
 rootWindow.title("MovieFinder")
 rootWindow.geometry("1400x900")
-rootWindow.wm_attributes("-transparentcolor", 'grey')
+#rootWindow.wm_attributes("-transparentcolor", 'grey')
 
 #Colors
 color1 = "#ff476d"
@@ -237,6 +250,7 @@ background_label.place(relwidth=1, relheight=1)
 
 bold_font = font.nametofont("TkDefaultFont")
 bold_font.configure(weight="bold")
+
 
 #create canva with headlines
 canvas = tk.Canvas(rootWindow, width=1400, height=900, bg=rootWindow.cget('bg'), highlightthickness=0)
@@ -394,6 +408,18 @@ genreOptions = ["Drama", "Black-and-white", "Indie", "Short film", "Silent film"
 genreMenu = ttk.Combobox(rootWindow, values=genreOptions, state="readonly", width = 50)
 genreMenu.set("Genre")
 
+#Selector for FuzzySearch
+exactSearch = tk.BooleanVar()
+fuzzySearch = tk.BooleanVar()
+exactSearchSelector = tk.Checkbutton(rootWindow, text='Exact Search',variable=exactSearch, onvalue=True, offvalue=False,
+                                     command=selectExactSearch, bg=color4, foreground="white",
+                                     disabledforeground="white")
+fuzzySearchSelector = tk.Checkbutton(rootWindow, text='Fuzzy Search',variable=fuzzySearch, onvalue=True, offvalue=False,
+                                     command=selectFuzzySearch, background=color4, foreground="white",
+                                     disabledforeground="white")
+exactSearchSelector.select()
+exactSearchSelector.configure(state="disabled")
+
 #add content to grid
 yPos = 240
 for i in range(filterLabels.size):
@@ -413,6 +439,8 @@ filterMenu.place(x=10, y=60)
 addFilterButton.place(x=600, y=75)
 searchButton.place(x=300, y=800)
 movieMenu.place(x=760, y=60)
+exactSearchSelector.place(x=485, y=800)
+fuzzySearchSelector.place(x=485, y=836)
 #movieInfoText.place(x=760, y=240)
 #findMoreButton.place(x=1000, y=800)
 

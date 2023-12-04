@@ -36,7 +36,8 @@ def test_generate_query_in_filter(filter_dict):
 
 def test_generate_query():
     fliter_dict = test_create_filter_dict()
-    filter = MovieFilter(fliter_dict)
+    filter = MovieFilt
+    er(fliter_dict)
     q = filter.generate_query()
     return q
 
