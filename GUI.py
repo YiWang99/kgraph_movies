@@ -8,10 +8,6 @@ import movies
 
 queryResults = {}
 
-
-
-
-
 def filterSelection(e):
     selectedFilter = filterMenu.get()
     if selectedFilter == "Duration" or selectedFilter == "Release":
